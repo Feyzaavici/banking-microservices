@@ -34,6 +34,7 @@ public class AccountService {
         String iban = generateIban();
 
         Account account = accountMapper.toEntity(accountRequest);
+        account.setIban(iban);
         Account savedAccount = accountRepository.save(account);
 
         log.info("Account created successfully with IBAN: {}",savedAccount.getIban());
@@ -83,7 +84,7 @@ public class AccountService {
 
     private  String generateIban(){
         String countryCode = "TR";
-        String checkDigits = String.format("%82d",(new Random()).nextInt(100));
+        String checkDigits = String.format("%02d",(new Random()).nextInt(100));
         String bankCode = "00001";
         String reserved = "0";
         String accountNumber = String.format("%016d", new Random().nextLong() & Long.MAX_VALUE).substring(0,16);

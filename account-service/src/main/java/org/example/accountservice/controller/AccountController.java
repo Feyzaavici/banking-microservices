@@ -47,7 +47,7 @@ public class AccountController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{iban}/balance")
+    @PostMapping("/{iban}/balance")
     public ResponseEntity<AccountResponse> updateBalance(@PathVariable String iban, @RequestBody UpdateBalanceRequest request){
         log.info("Update balance for customer: {},", iban);
 
