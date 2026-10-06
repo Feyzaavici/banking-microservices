@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(name = "account-service")
 public interface AccountClient {
 
-    @GetMapping("/api/account/iban/{iban}")
+    @GetMapping("/api/accounts/iban/{iban}")
     AccountResponse getAccountByIban(@PathVariable("iban") String iban);
 
-    @PostMapping("/api/account/{iban}/balance")
+    @PostMapping("/api/accounts/{iban}/balance")
     AccountResponse updateBalance(
             @PathVariable("iban") String iban,
             @RequestBody UpdateBalanceRequest request);
