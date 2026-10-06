@@ -1,6 +1,7 @@
 package org.example.customerservice.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
@@ -23,7 +24,7 @@ public record CreateCustomerRequest(
         @NotBlank
         String phoneNumber,
 
-        @NotBlank
+        @NotNull
         LocalDate birthDate,
 
         String address
