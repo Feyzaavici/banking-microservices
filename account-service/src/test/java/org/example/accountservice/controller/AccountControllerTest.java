@@ -41,7 +41,7 @@ class AccountControllerTest {
     void validCreateRequestReturnsAccount() throws Exception {
         when(service.createAccount(any())).thenReturn(new AccountResponse(1L, "TR000000100000000000000001",
                 42L, new BigDecimal("125.50"), "TRY", AccountStatus.ACTIVE, null, null));
-        mvc.perform(post("/api/account/create").contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/api/accounts/create").contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"customerId":42,"currency":"TRY","initialBalance":125.50}
                                 """))
@@ -52,10 +52,10 @@ class AccountControllerTest {
 
     @Test
     void missingRequiredFieldsReturnsValidationErrorsWithoutCallingService() throws Exception {
-        mvc.perform(post("/api/account/create").contentType(MediaType.APPLICATION_JSON).content("{}"))
+        mvc.perform(post("/api/accounts/create").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.path").value("/api/account/create"))
+                .andExpect(jsonPath("$.path").value("/api/accounts/create"))
                 .andExpect(jsonPath("$.validationErrors.customerId").isArray())
                 .andExpect(jsonPath("$.validationErrors.currency").isArray())
                 .andExpect(jsonPath("$.validationErrors.initialBalance").isArray());
@@ -64,7 +64,7 @@ class AccountControllerTest {
 
     @Test
     void unsupportedCurrencyIsRejected() throws Exception {
-        mvc.perform(post("/api/account/create").contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/api/accounts/create").contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"customerId":42,"currency":"GBP","initialBalance":100}
                                 """))
@@ -78,24 +78,24 @@ class AccountControllerTest {
     @EnumSource(MessageType.class)
     void businessErrorsUseMessageTypeStatusAndMessage(MessageType type) throws Exception {
         when(service.getAccountByIban("test-iban")).thenThrow(new BaseException(type));
-        mvc.perform(get("/api/account/iban/test-iban"))
+        mvc.perform(get("/api/accounts/iban/test-iban"))
                 .andExpect(status().is(type.getStatus().value()))
                 .andExpect(jsonPath("$.status").value(type.getStatus().value()))
                 .andExpect(jsonPath("$.message").value(type.getMessage()))
-                .andExpect(jsonPath("$.path").value("/api/account/iban/test-iban"))
+                .andExpect(jsonPath("$.path").value("/api/accounts/iban/test-iban"))
                 .andExpect(jsonPath("$.timestamp").exists());
     }
 
     @Test
     void malformedJsonReturnsBadRequest() throws Exception {
-        mvc.perform(post("/api/account/create").contentType(MediaType.APPLICATION_JSON).content("{"))
+        mvc.perform(post("/api/accounts/create").contentType(MediaType.APPLICATION_JSON).content("{"))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.status").value(400));
         verifyNoInteractions(service);
     }
 
     @Test
     void unsupportedHttpMethodRemains405() throws Exception {
-        mvc.perform(delete("/api/account/create"))
+        mvc.perform(delete("/api/accounts/create"))
                 .andExpect(status().isMethodNotAllowed()).andExpect(jsonPath("$.status").value(405));
         verifyNoInteractions(service);
     }
@@ -104,7 +104,7 @@ class AccountControllerTest {
     void unexpectedErrorDoesNotExposeInternalMessage() throws Exception {
         when(service.getAccountByIban("test-iban"))
                 .thenThrow(new IllegalStateException("Internal database connection details"));
-        mvc.perform(get("/api/account/iban/test-iban"))
+        mvc.perform(get("/api/accounts/iban/test-iban"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.message").value("An unexpected error occurred"))
                 .andExpect(jsonPath("$.status").value(500));
