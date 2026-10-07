@@ -1,8 +1,10 @@
 package org.example.transactionservice.service;
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.example.transactionservice.client.AccountClient;
+import org.example.transactionservice.client.AccountClientProxy;
+import org.example.transactionservice.exception.AccountServiceUnavailableException;
 import org.example.transactionservice.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +25,7 @@ import java.util.List;
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
-    private final AccountClient accountClient;
+    private final AccountClientProxy accountClientProxy;
     private final TransactionMapper transactionMapper;
 
     @Transactional(noRollbackFor = BaseException.class)
@@ -42,8 +44,8 @@ public class TransactionService {
         Transaction savedTransaction = transactionRepository.save(transaction);
 
         try {
-            AccountResponse sender = accountClient.getAccountByIban(request.senderIban());
-            AccountResponse receiver = accountClient.getAccountByIban(request.receiverIban());
+            AccountResponse sender = accountClientProxy.getAccountByIban(request.senderIban());
+            AccountResponse receiver = accountClientProxy.getAccountByIban(request.receiverIban());
             if (!"ACTIVE".equals(sender.status()) || !"ACTIVE".equals(receiver.status())) {
                 throw new BaseException(MessageType.ACCOUNT_NOT_ACTIVE);
             }
@@ -56,9 +58,9 @@ public class TransactionService {
             }
 
             // Remote balance changes are not rolled back by this local transaction.
-            accountClient.updateBalance(request.senderIban(),
+            accountClientProxy.updateBalance(request.senderIban(),
                     new UpdateBalanceRequest(request.amount(), OperationType.WITHDRAW));
-            accountClient.updateBalance(request.receiverIban(),
+            accountClientProxy.updateBalance(request.receiverIban(),
                     new UpdateBalanceRequest(request.amount(), OperationType.DEPOSIT));
         } catch (BaseException exception) {
             markFailed(savedTransaction, exception);
@@ -67,6 +69,9 @@ public class TransactionService {
             markFailed(savedTransaction, exception);
             throw new BaseException(exception.status() == 404
                     ? MessageType.ACCOUNT_NOT_FOUND : MessageType.ACCOUNT_SERVICE_ERROR, exception);
+        } catch (CallNotPermittedException exception) {
+            markFailed(savedTransaction, exception);
+            throw new AccountServiceUnavailableException(exception);
         } catch (Exception exception) {
             markFailed(savedTransaction, exception);
             throw new BaseException(MessageType.TRANSACTION_FAILED, exception);
