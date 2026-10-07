@@ -32,3 +32,10 @@ jobs:
           -pl account-service
           "-Dtest=AccountServiceTest,AccountControllerTest"
           test
+
+      - name: Run Transaction Service tests
+        run: >
+          mvn --batch-mode --no-transfer-progress
+          -pl transaction-service
+          "-Dtest=AccountClientErrorDecoderTest,AccountClientProxyTest,TransactionServiceUnavailableTest"
+          test

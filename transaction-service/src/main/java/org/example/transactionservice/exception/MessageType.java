@@ -14,7 +14,8 @@ public enum MessageType {
     CURRENCY_MISMATCH(HttpStatus.BAD_REQUEST, "Account currencies must match the transfer currency"),
     INSUFFICIENT_BALANCE(HttpStatus.BAD_REQUEST, "Insufficient balance"),
     ACCOUNT_SERVICE_ERROR(HttpStatus.BAD_GATEWAY, "Account service request failed"),
-    TRANSACTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Transaction failed");
+    TRANSACTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Transaction failed"),
+    ACCOUNT_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Account service is currently unavailable");
 
     private final HttpStatus status;
     private final String message;
