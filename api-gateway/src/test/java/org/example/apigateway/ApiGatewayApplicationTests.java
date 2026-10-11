@@ -2,11 +2,10 @@ package org.example.apigateway;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(properties = {
-        "jwt.secret=test-only-jwt-secret-at-least-32-bytes-long",
-        "eureka.client.enabled=false"
-})
+@SpringBootTest
+@ActiveProfiles("test")
 class ApiGatewayApplicationTests {
 
     @Test

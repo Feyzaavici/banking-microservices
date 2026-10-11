@@ -11,7 +11,7 @@ spring:
             read-timeout: 3000
 
   config:
-    import: "file:.env[.properties]"
+    import: "optional:file:.env[.properties]"
 
   datasource:
     url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
