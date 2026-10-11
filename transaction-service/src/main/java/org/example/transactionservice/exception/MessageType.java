@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum MessageType {
     SAME_ACCOUNT(HttpStatus.BAD_REQUEST, "Cannot transfer to the same account"),
+    ACCESS_DENIED(HttpStatus.FORBIDDEN, "You can only access your own accounts"),
     INVALID_AMOUNT(HttpStatus.BAD_REQUEST, "Amount must be positive"),
     ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "Account not found"),
     ACCOUNT_NOT_ACTIVE(HttpStatus.BAD_REQUEST, "Account is not active"),

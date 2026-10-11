@@ -32,6 +32,10 @@ public class Customer {
     @Column(unique = true, nullable = false, length = 11)
     private String tcNo;
 
+    // Nullable for existing customers; they cannot log in until assigned a password hash.
+    @Column(length = 60)
+    private String password;
+
     @Column(nullable = false)
     private String firstName;
 

@@ -17,4 +17,5 @@ public record AccountResponse(
 
 
 ) {
+    public String getIban() { return iban; }
 }

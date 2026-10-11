@@ -11,4 +11,6 @@ public record UpdateBalanceRequest(
         @NotNull
         OperationType operationTyp
 ) {
+    public BigDecimal getAmount() { return amount; }
+    public OperationType getOperationType() { return operationTyp; }
 }

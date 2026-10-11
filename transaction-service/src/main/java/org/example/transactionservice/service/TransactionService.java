@@ -29,7 +29,7 @@ public class TransactionService {
     private final TransactionMapper transactionMapper;
 
     @Transactional(noRollbackFor = BaseException.class)
-    public TransactionResponse createTransaction(CreateTransactionRequest request) {
+    public TransactionResponse createTransaction(CreateTransactionRequest request, Long requesterCustomerId) {
         log.info("Creating transaction from {} to {}, amount: {}",
                 request.senderIban(), request.receiverIban(), request.amount());
         if (request.senderIban().equals(request.receiverIban())) {
@@ -45,6 +45,7 @@ public class TransactionService {
 
         try {
             AccountResponse sender = accountClientProxy.getAccountByIban(request.senderIban());
+            requireOwner(sender.customerId(), requesterCustomerId);
             AccountResponse receiver = accountClientProxy.getAccountByIban(request.receiverIban());
             if (!"ACTIVE".equals(sender.status()) || !"ACTIVE".equals(receiver.status())) {
                 throw new BaseException(MessageType.ACCOUNT_NOT_ACTIVE);
@@ -84,7 +85,9 @@ public class TransactionService {
     }
 
     @Transactional(readOnly = true)
-    public List<TransactionResponse> getTransactionsByIban(String iban) {
+    public List<TransactionResponse> getTransactionsByIban(String iban, Long requesterCustomerId) {
+        AccountResponse account = accountClientProxy.getAccountByIban(iban);
+        requireOwner(account.customerId(), requesterCustomerId);
         return transactionMapper.toDtoList(
                 transactionRepository.findBySenderIbanOrReceiverIban(iban, iban));
     }
@@ -93,5 +96,11 @@ public class TransactionService {
         log.error("Transaction failed: {}", transaction.getId(), exception);
         transaction.setStatus(TransactionStatus.FAILED);
         transactionRepository.save(transaction);
+    }
+
+    private void requireOwner(Long owner, Long requester) {
+        if (requester == null || !requester.equals(owner)) {
+            throw new BaseException(MessageType.ACCESS_DENIED);
+        }
     }
 }
