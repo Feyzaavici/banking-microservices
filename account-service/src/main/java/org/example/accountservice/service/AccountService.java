@@ -28,6 +28,29 @@ public class AccountService {
     private final AccountMapper accountMapper;
 
     @Transactional
+    public AccountResponse createAccount(CreateAccountRequest request, Long requesterCustomerId) {
+        requireOwner(request.customerId(), requesterCustomerId);
+        return createAccount(request);
+    }
+
+    public AccountResponse getAccountByIban(String iban, Long requesterCustomerId) {
+        AccountResponse account = getAccountByIbanInternal(iban);
+        requireOwner(account.customerId(), requesterCustomerId);
+        return account;
+    }
+
+    public List<AccountResponse> getAccountsByCustomerId(Long customerId, Long requesterCustomerId) {
+        requireOwner(customerId, requesterCustomerId);
+        return getAccountsByCustomerId(customerId);
+    }
+
+    private void requireOwner(Long owner, Long requester) {
+        if (requester == null || !requester.equals(owner)) {
+            throw new BaseException(MessageType.ACCESS_DENIED);
+        }
+    }
+
+    @Transactional
     public AccountResponse createAccount(CreateAccountRequest accountRequest){
         log.info("Create account for customer: {}",accountRequest.customerId());
 
@@ -42,14 +65,14 @@ public class AccountService {
         return accountMapper.toResponse(savedAccount);
     }
 
-    public AccountResponse getAccountByIban(String iban){
+    public AccountResponse getAccountByIbanInternal(String iban){
         log.info("Get account by iban: {}", iban);
         Account account = accountRepository.findByIban(iban).orElseThrow(()->new BaseException(MessageType.ACCOUNT_NOT_FOUND));
 
         return accountMapper.toResponse(account);
     }
 
-    public List<AccountResponse> getAccountByCustomerId(Long customerId){
+    public List<AccountResponse> getAccountsByCustomerId(Long customerId){
         log.info("Get account by customerId: {} ",customerId);
         return accountMapper.toDtoList(accountRepository.findByCustomerId(customerId));
 

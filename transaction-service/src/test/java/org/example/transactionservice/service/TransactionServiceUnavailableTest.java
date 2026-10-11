@@ -64,7 +64,7 @@ class TransactionServiceUnavailableTest {
                 SENDER, RECEIVER, new BigDecimal("100.00"), "Test transfer", "TRY"
         );
 
-        assertThatThrownBy(() -> service.createTransaction(request))
+        assertThatThrownBy(() -> service.createTransaction(request, 42L))
                 .isInstanceOfSatisfying(AccountServiceUnavailableException.class, exception -> {
                     assertThat(exception.getMessageType())
                             .isEqualTo(MessageType.ACCOUNT_SERVICE_UNAVAILABLE);
@@ -85,7 +85,7 @@ class TransactionServiceUnavailableTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
 
-        mvc.perform(post("/api/transactions")
+        mvc.perform(post("/api/transactions").header("X-Customer-Id", 42L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

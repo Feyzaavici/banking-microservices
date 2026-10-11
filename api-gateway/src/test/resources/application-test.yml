@@ -1,0 +1,7 @@
+jwt:
+  secret: test-only-jwt-secret-at-least-32-bytes-long
+  expiration-ms: 3600000
+
+eureka:
+  client:
+    enabled: false

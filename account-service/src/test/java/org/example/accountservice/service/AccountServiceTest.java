@@ -65,7 +65,7 @@ class AccountServiceTest {
         Account account = account();
         when(repository.findByIban(IBAN)).thenReturn(Optional.of(account));
 
-        var response = service.getAccountByIban(IBAN);
+        var response = service.getAccountByIbanInternal(IBAN);
 
         assertThat(response.id()).isEqualTo(account.getId());
         assertThat(response.iban()).isEqualTo(IBAN);
@@ -80,7 +80,7 @@ class AccountServiceTest {
     @Test
     void getMissingAccountThrowsAccountNotFound() {
         when(repository.findByIban(IBAN)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.getAccountByIban(IBAN))
+        assertThatThrownBy(() -> service.getAccountByIbanInternal(IBAN))
                 .isInstanceOfSatisfying(BaseException.class,
                         error -> assertThat(error.getMessageType()).isEqualTo(MessageType.ACCOUNT_NOT_FOUND));
     }
@@ -91,13 +91,13 @@ class AccountServiceTest {
         Account second = account();
         second.setId(2L);
         when(repository.findByCustomerId(42L)).thenReturn(List.of(first, second));
-        assertThat(service.getAccountByCustomerId(42L)).extracting("id").containsExactly(1L, 2L);
+        assertThat(service.getAccountsByCustomerId(42L)).extracting("id").containsExactly(1L, 2L);
     }
 
     @Test
     void getAccountsByCustomerReturnsEmptyListWhenNoneExist() {
         when(repository.findByCustomerId(42L)).thenReturn(List.of());
-        assertThat(service.getAccountByCustomerId(42L)).isEmpty();
+        assertThat(service.getAccountsByCustomerId(42L)).isEmpty();
     }
 
     @Test
@@ -173,5 +173,25 @@ class AccountServiceTest {
                 .balance(new BigDecimal("100.00")).currency("TRY").status(AccountStatus.ACTIVE)
                 .createdAt(LocalDateTime.of(2026, 1, 1, 10, 30))
                 .updatedAt(LocalDateTime.of(2026, 1, 2, 12, 45)).build();
+    }
+
+    @Test
+    void cannotCreateOrListAccountsForAnotherCustomer() {
+        assertThatThrownBy(() -> service.createAccount(new CreateAccountRequest(99L, "TRY", BigDecimal.ZERO), 42L))
+                .isInstanceOfSatisfying(BaseException.class,
+                        error -> assertThat(error.getMessageType()).isEqualTo(MessageType.ACCESS_DENIED));
+        assertThatThrownBy(() -> service.getAccountsByCustomerId(99L, 42L))
+                .isInstanceOfSatisfying(BaseException.class,
+                        error -> assertThat(error.getMessageType()).isEqualTo(MessageType.ACCESS_DENIED));
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void onlyOwnerCanReadAccountByIban() {
+        when(repository.findByIban(IBAN)).thenReturn(Optional.of(account()));
+        assertThatThrownBy(() -> service.getAccountByIban(IBAN, 99L))
+                .isInstanceOfSatisfying(BaseException.class,
+                        error -> assertThat(error.getMessageType()).isEqualTo(MessageType.ACCESS_DENIED));
+        assertThat(service.getAccountByIban(IBAN, 42L).customerId()).isEqualTo(42L);
     }
 }

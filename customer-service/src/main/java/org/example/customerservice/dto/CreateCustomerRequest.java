@@ -27,8 +27,13 @@ public record CreateCustomerRequest(
         @NotNull
         LocalDate birthDate,
 
-        String address
+        String address,
+
+        @NotBlank
+        @Size(min = 6)
+        String password
 
 
 ) {
+    public String getTcNo() { return tcNo; }
 }

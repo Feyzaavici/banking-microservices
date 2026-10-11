@@ -18,4 +18,5 @@ public record CreateAccountRequest(
         @NotNull
         BigDecimal initialBalance
 ) {
+    public Long getCustomerId() { return customerId; }
 }

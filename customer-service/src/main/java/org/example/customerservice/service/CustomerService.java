@@ -12,8 +12,9 @@ import org.example.customerservice.exception.MessageType;
 import org.example.customerservice.mapper.CustomerMapper;
 import org.example.customerservice.repository.CustomerRepository;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.example.customerservice.dto.AuthenticateRequest;
+import org.example.customerservice.dto.CustomerAuthResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +23,7 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final CustomerMapper customerMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public CustomerResponse createCustomer(CreateCustomerRequest request){
@@ -33,20 +35,24 @@ public class CustomerService {
         }
 
         Customer customer = customerMapper.toEntity(request);
+        customer.setPassword(passwordEncoder.encode(request.password()));
         customer.setStatus(CustomerStatus.ACTIVE);
         Customer savedCustomer = customerRepository.save(customer);
 
          return customerMapper.toResponse(savedCustomer);
     }
 
-    public CustomerResponse getCustomer(String tcNo){
+    public CustomerResponse getCustomer(String tcNo, Long requesterCustomerId){
         log.info("Get customer with tcNo: {}", tcNo);
         Customer customer = customerRepository.findByTcNo(tcNo).orElseThrow(()->new BaseException(MessageType.CUSTOMER_NOT_FOUND));
+
+        requireOwner(customer.getId(), requesterCustomerId);
 
         return customerMapper.toResponse(customer);
     }
 
-    public CustomerResponse getCustomerById(Long id){
+    public CustomerResponse getCustomer(Long id, Long requesterCustomerId){
+        requireOwner(id, requesterCustomerId);
         log.info("Get customer with id: {}", id);
 
         Customer customer = customerRepository.findById(id).orElseThrow(()-> new BaseException(MessageType.CUSTOMER_NOT_FOUND));
@@ -54,12 +60,20 @@ public class CustomerService {
         return customerMapper.toResponse(customer);
     }
 
-    public List<CustomerResponse> getAllCustomers(){
-        log.info("Get all customers");
+    public CustomerAuthResponse authenticate(AuthenticateRequest request) {
+        Customer customer = customerRepository.findByTcNo(request.tcNo())
+                .orElseThrow(() -> new BaseException(MessageType.INVALID_CREDENTIALS));
+        if (customer.getPassword() == null
+                || !passwordEncoder.matches(request.password(), customer.getPassword())) {
+            throw new BaseException(MessageType.INVALID_CREDENTIALS);
+        }
+        return new CustomerAuthResponse(customer.getId(), customer.getTcNo());
+    }
 
-        List<Customer> customers = customerRepository.findAll();
-
-        return customerMapper.toDtoList(customers);
+    private void requireOwner(Long owner, Long requester) {
+        if (requester == null || !requester.equals(owner)) {
+            throw new BaseException(MessageType.ACCESS_DENIED);
+        }
     }
 
 
